@@ -20,6 +20,18 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'ProductID', 'ProductCode', 'ProductName', 'ProductImage', 'CreatedDate', 'UpdatedDate', 'IsFavourite', 'Active', 'HSNCode', 'TotalStock', 'CreatedUser', 'product_variants']
 
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product_variant', 'quantity']
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'items', 'created_at']
+
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order

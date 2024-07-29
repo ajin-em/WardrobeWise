@@ -1,13 +1,52 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .models import Product, ProductVariant, Order
-from .serializers import ProductSerializer, OrderSerializer
+from .models import *
+from .serializers import *
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 
 class ListProductView(generics.ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+
+
+class CartDetailView(generics.RetrieveAPIView):
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return cart
+
+class AddToCartView(generics.CreateAPIView):
+    serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        product_variant = serializer.validated_data['product_variant']
+        quantity = serializer.validated_data['quantity']
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product_variant=product_variant)
+        if not created:
+            cart_item.quantity += quantity
+        cart_item.save()
+
+class UpdateCartItemView(generics.UpdateAPIView):
+    serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        cart = Cart.objects.get(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
+
+class RemoveCartItemView(generics.DestroyAPIView):
+    serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        cart = Cart.objects.get(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
 
 class OrderProductView(generics.CreateAPIView):
     serializer_class = OrderSerializer

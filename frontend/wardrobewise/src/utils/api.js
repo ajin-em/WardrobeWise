@@ -1,24 +1,42 @@
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
 
-export const useApi = () => {
-  const { token } = useAuth();
+const instance = axios.create({
+  baseURL: 'http://localhost:8000/api', // Update with your actual backend API URL
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api/',
-  });
+// Add a request interceptor to include the token in the headers
+instance.interceptors.request.use(config => {
+  const token = localStorage.getItem('access');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
 
-  api.interceptors.request.use(
-    config => {
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-      return config;
-    },
-    error => {
-      return Promise.reject(error);
-    }
-  );
+// Add a response interceptor to handle token refresh
+instance.interceptors.response.use(response => {
+  return response;
+}, error => {
+  const originalRequest = error.config;
+  if (error.response.status === 401 && !originalRequest._retry) {
+    originalRequest._retry = true;
+    const refreshToken = localStorage.getItem('refresh');
+    return instance.post('/token/refresh/', { refresh: refreshToken })
+      .then(res => {
+        if (res.status === 200) {
+          localStorage.setItem('access', res.data.access);
+          instance.defaults.headers.common['Authorization'] = 'Bearer ' + res.data.access;
+          originalRequest.headers['Authorization'] = 'Bearer ' + res.data.access;
+          return instance(originalRequest);
+        }
+      });
+  }
+  return Promise.reject(error);
+});
 
-  return api;
-};
+export default instance;

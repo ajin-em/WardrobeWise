@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import axios from '../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Register = () => {
   const [formData, setFormData] = useState({
     username: '',
-    password: ''
+    email: '',
+    password: '',
+    password2: ''
   });
   const navigate = useNavigate();
 
@@ -18,20 +20,18 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('/login/', formData)
+    axios.post('/register/', formData)
       .then(response => {
-        console.log('Logged in successfully');
-        localStorage.setItem('access', response.data.access);
-        localStorage.setItem('refresh', response.data.refresh);
-        navigate('/products');
+        console.log('Registered successfully');
+        navigate('/login');
       })
       .catch(error => console.error(error));
   };
 
   return (
-    <div className="login-container p-4">
+    <div className="register-container p-4">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-2xl mb-4">Login</h2>
+        <h2 className="text-2xl mb-4">Register</h2>
         <input 
           type="text" 
           name="username" 
@@ -41,22 +41,38 @@ const Login = () => {
           className="w-full mb-2 p-2 border rounded"
         />
         <input 
+          type="email" 
+          name="email" 
+          value={formData.email} 
+          onChange={handleChange} 
+          placeholder="Email" 
+          className="w-full mb-2 p-2 border rounded"
+        />
+        <input 
           type="password" 
           name="password" 
           value={formData.password} 
           onChange={handleChange} 
           placeholder="Password" 
+          className="w-full mb-2 p-2 border rounded"
+        />
+        <input 
+          type="password" 
+          name="password2" 
+          value={formData.password2} 
+          onChange={handleChange} 
+          placeholder="Confirm Password" 
           className="w-full mb-4 p-2 border rounded"
         />
         <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded">
-          Login
+          Register
         </button>
         <p className="mt-4 text-center">
-          Don't have an account? <Link to="/register" className="text-blue-500">Register</Link>
+          Already have an account? <Link to="/login" className="text-blue-500">Login</Link>
         </p>
       </form>
     </div>
   );
 };
 
-export default Login;
+export default Register;

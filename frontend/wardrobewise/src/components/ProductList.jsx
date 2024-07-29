@@ -1,70 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { useApi } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import axios from '../utils/api';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
-  const api = useApi();
-  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
+    axios.get('/list-products/')
+      .then(response => setProducts(response.data))
+      .catch(error => console.error(error));
+  }, []);
 
-    const fetchProducts = async () => {
-      try {
-        const response = await api.get('list-products/');
-        setProducts(response.data);
-      } catch (error) {
-        console.error('Failed to fetch products', error);
-      }
-    };
-
-    fetchProducts();
-  }, [api, isAuthenticated]);
-
-  const handleBuyClick = async (productVariantId) => {
-    try {
-      const response = await api.post('order-product/', {
-        product_variant: productVariantId, // Adjust based on your actual variant id field
-        quantity: 1, // Adjust as needed
-      });
-      console.log(response.data);
-      // Update product list or show success message
-    } catch (error) {
-      console.error('Failed to order product', error);
-    }
+  const handleAddToCart = (productVariantId) => {
+    axios.post('/cart/add/', { product_variant: productVariantId, quantity: 1 })
+      .then(response => console.log('Added to cart'))
+      .catch(error => console.error(error));
   };
 
-  if (!isAuthenticated) {
-    return <p>Please log in to view products.</p>;
-  }
-
   return (
-    <div className="p-4">
-      <h1 className="text-xl mb-4">Products</h1>
-      <ul>
-        {products.map(product => (
-          <li key={product.id} className="mb-2 p-4 border rounded">
-            <h2 className="text-lg">{product.ProductName}</h2>
-            <img src={product.ProductImage} alt={product.ProductName} className="w-32 h-32 object-cover"/>
-            <p>Stock: {product.TotalStock}</p>
-            {product.variants && product.variants.map(variant => (
-              <div key={variant.id} className="mt-2">
-                <p>{variant.variantName}</p>
-                <p>Variant Stock: {variant.stock}</p>
-                <button 
-                  onClick={() => handleBuyClick(variant.id)} 
-                  className="mt-2 p-2 bg-blue-500 text-white rounded"
-                >
-                  Buy Variant
-                </button>
-              </div>
-            ))}
-          </li>
-        ))}
-      </ul>
+    <div className="product-list grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+      {products.map(product => (
+        <div key={product.id} className="product bg-white p-4 rounded-lg shadow">
+          <img src={product.ProductImage} alt={product.ProductName} className="w-full h-48 object-cover rounded-t-lg" />
+          <h3 className="mt-2 text-lg font-bold">{product.ProductName}</h3>
+          <button 
+            className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded"
+            onClick={() => handleAddToCart(product.id)}
+          >
+            Add to Cart
+          </button>
+        </div>
+      ))}
     </div>
   );
 };
