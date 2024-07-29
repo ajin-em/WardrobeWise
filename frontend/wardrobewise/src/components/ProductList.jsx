@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import '../style.css'
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -43,13 +44,13 @@ const ProductList = () => {
           {products.map(product => (
             <div
               key={product.id}
-              className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
+              className=" border border-gray-200 rounded-lg shadow-lg overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
             >
               <div className="w-full h-48">
                 <img
                   src={product.ProductImage}
                   alt={product.ProductName}
-                  className="w-full h-auto object-cover"
+                  className="w-full  h-auto object-cover"
                 />
               </div>
               <div className="p-2 text-center ">
@@ -62,7 +63,7 @@ const ProductList = () => {
                   product.variants.map(variant => (
                     <button
                       key={variant.id || `no-id-${Math.random()}`} // Fallback key if id is missing
-                      className="w-1/2 bg-green-500 text-white py-2 px-2 rounded-md text-sm font-semibold transition-colors duration-300 hover:bg-green-600 mb-2"
+                      className="w-1/2 glass-effect text-white py-2 px-2 rounded-md text-sm font-semibold transition-colors duration-300 hover:bg-green-600 mb-2"
                       onClick={() => addToCart(variant.id)}
                     >
                       Add {variant.name} to Cart
