@@ -15,7 +15,7 @@ class Product(models.Model):
     IsFavourite = models.BooleanField(default=False)
     Active = models.BooleanField(default=True)
     HSNCode = models.CharField(max_length=255, blank=True, null=True)
-    TotalStock = models.PositiveIntegerField(default=0, blank=True, null=True)
+    TotalStock = models.PositiveIntegerField(default=0, blank=True, null=True) 
 
     class Meta:
         db_table = "products_product"
@@ -26,10 +26,13 @@ class Product(models.Model):
 
 class Variant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(Product, related_name='variants', on_delete=models.CASCADE,null=True)
     name = models.CharField(max_length=255)
+    stock = models.PositiveIntegerField(default=0) 
 
     def __str__(self):
-        return self.name
+        return f"{self.product.ProductName} - {self.name}"
+
 
 class SubVariant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -38,15 +41,6 @@ class SubVariant(models.Model):
 
     def __str__(self):
         return f"{self.variant.name} - {self.name}"
-
-class ProductVariant(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(Product, related_name='product_variants', on_delete=models.CASCADE)
-    subvariant = models.ForeignKey(SubVariant, related_name='product_variants', on_delete=models.CASCADE)
-    stock = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        unique_together = (("product", "subvariant"),)
 
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart')
@@ -57,14 +51,14 @@ class Cart(models.Model):
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
-    product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)  
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{self.product_variant} x {self.quantity}"
+        return f"{self.product.ProductName} x {self.quantity}"
 
 class Order(models.Model):
-    product_variant = models.ForeignKey(ProductVariant, related_name='orders', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
     class Meta:

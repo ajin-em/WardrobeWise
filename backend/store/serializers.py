@@ -1,38 +1,34 @@
 from rest_framework import serializers
 from .models import *
 
-class SubVariantSerializer(serializers.ModelSerializer):
+class VariantSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SubVariant
-        fields = ['id', 'name']
-
-class ProductVariantSerializer(serializers.ModelSerializer):
-    subvariant = SubVariantSerializer()
-
-    class Meta:
-        model = ProductVariant
-        fields = ['id', 'subvariant', 'stock']
+        model = Variant
+        fields = ['id', 'name', 'stock']
 
 class ProductSerializer(serializers.ModelSerializer):
-    product_variants = ProductVariantSerializer(many=True)
+    variants = VariantSerializer(many=True, read_only=True)  
 
     class Meta:
         model = Product
-        fields = ['id', 'ProductID', 'ProductCode', 'ProductName', 'ProductImage', 'CreatedDate', 'UpdatedDate', 'IsFavourite', 'Active', 'HSNCode', 'TotalStock', 'CreatedUser', 'product_variants']
-
+        fields = '__all__'
 class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()  
+
     class Meta:
         model = CartItem
-        fields = ['id', 'product_variant', 'quantity']
+        fields = ['id', 'cart', 'product', 'quantity']  
 
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)
+    items = CartItemSerializer(many=True)
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items', 'created_at']
+        fields = '__all__'
 
 class OrderSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()  
+
     class Meta:
         model = Order
-        fields = ['id', 'product_variant', 'quantity']
+        fields = ['id', 'product', 'quantity'] 
