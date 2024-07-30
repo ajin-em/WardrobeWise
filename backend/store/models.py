@@ -10,12 +10,12 @@ class Product(models.Model):
     ProductName = models.CharField(max_length=255)
     ProductImage = VersatileImageField(upload_to="uploads/", blank=True, null=True)
     CreatedDate = models.DateTimeField(auto_now_add=True)
-    UpdatedDate = models.DateTimeField(blank=True, null=True)
+    UpdatedDate = models.DateTimeField(auto_now=True)
     CreatedUser = models.ForeignKey(User, related_name="user_products", on_delete=models.CASCADE)
     IsFavourite = models.BooleanField(default=False)
     Active = models.BooleanField(default=True)
     HSNCode = models.CharField(max_length=255, blank=True, null=True)
-    TotalStock = models.PositiveIntegerField(default=0, blank=True, null=True) 
+    TotalStock = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = "products_product"
@@ -24,15 +24,17 @@ class Product(models.Model):
         unique_together = (("ProductCode", "ProductID"),)
         ordering = ("-CreatedDate", "ProductID")
 
+    def __str__(self):
+        return self.ProductName
+
 class Variant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(Product, related_name='variants', on_delete=models.CASCADE,null=True)
+    product = models.ForeignKey(Product, related_name='variants', on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=255)
-    stock = models.PositiveIntegerField(default=0) 
+    stock = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.product.ProductName} - {self.name}"
-
 
 class SubVariant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -51,17 +53,22 @@ class Cart(models.Model):
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)  
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
         return f"{self.product.ProductName} x {self.quantity}"
 
 class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, related_name='orders', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
+    ordered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'orders'
         verbose_name = 'order'
         verbose_name_plural = 'orders'
+
+    def __str__(self):
+        return f"Order({self.user.username} - {self.product.ProductName} - {self.quantity})"

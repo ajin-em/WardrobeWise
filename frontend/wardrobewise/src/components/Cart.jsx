@@ -24,6 +24,20 @@ const Cart = () => {
       .catch(error => console.error(error));
   };
 
+  const handleOrderSubmit = () => {
+    const orderData = cart.items.map(item => ({
+      product_id: item.product.id,
+      quantity: item.quantity,
+    }));
+    
+    axios.post('/order/', { items: orderData })
+      .then(response => {
+        console.log('Order placed successfully:', response.data);
+        navigate('/order-summary');
+      })
+      .catch(error => console.error('Error placing order:', error));
+  };
+
   if (!cart) return <div className="text-center text-gray-600">Loading...</div>;
 
   return (
@@ -66,7 +80,7 @@ const Cart = () => {
           </div>
           <button
             className="mt-6 w-full bg-green-500 text-white py-2 px-4 rounded transition-colors duration-300 hover:bg-green-600"
-            onClick={() => navigate('/order')}
+            onClick={handleOrderSubmit}
           >
             Checkout
           </button>

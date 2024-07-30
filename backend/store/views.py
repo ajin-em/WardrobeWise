@@ -1,16 +1,19 @@
+import logging
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
 from .models import *
 from .serializers import *
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 
+logger = logging.getLogger(__name__)
+
 class ListProductView(generics.ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-
-
 
 class CartDetailView(generics.RetrieveAPIView):
     serializer_class = CartSerializer
@@ -23,42 +26,43 @@ class CartDetailView(generics.RetrieveAPIView):
 class AddToCartView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        product_variant_id = request.data.get('product_variant_id')
+    def post(self, request, *args, **kwargs):
+        product_id = request.data.get('product_id')
         quantity = request.data.get('quantity', 1)
 
-        if not product_variant_id:
-            return Response({"error": "Product variant ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not product_id:
+            return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            product_variant = ProductVariant.objects.get(id=product_variant_id)
-        except ProductVariant.DoesNotExist:
-            return Response({"error": f"Product variant with ID {product_variant_id} not found"}, status=status.HTTP_404_NOT_FOUND)
+            product = get_object_or_404(Product, id=product_id)
+            cart, created = Cart.objects.get_or_create(user=request.user)
+            cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
 
-        # Get or create the cart for the user
-        cart, created = Cart.objects.get_or_create(user=request.user)
+            if not created:
+                cart_item.quantity += int(quantity)
+            else:
+                cart_item.quantity = int(quantity)
 
-        # Try to get existing CartItem, or create a new one if it doesn't exist
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            product_variant=product_variant,
-            defaults={'quantity': quantity}
-        )
-
-        if not created:
-            # If the CartItem already existed, update its quantity
-            cart_item.quantity += quantity
             cart_item.save()
 
-        return Response(CartItemSerializer(cart_item).data, status=status.HTTP_200_OK)
+            return Response({'message': 'Product added to cart successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error in AddToCartView: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class UpdateCartItemView(generics.UpdateAPIView):
-    serializer_class = CartItemSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        cart = Cart.objects.get(user=self.request.user)
-        return CartItem.objects.filter(cart=cart)
+class UpdateCartItemView(APIView):
+    def put(self, request, item_id):
+        try:
+            cart_item = CartItem.objects.get(id=item_id)
+            quantity = request.data.get('quantity')
+            cart_item.quantity = quantity
+            cart_item.save()
+            cart = cart_item.cart
+            return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
+        except CartItem.DoesNotExist:
+            return Response({'error': 'CartItem not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class RemoveCartItemView(generics.DestroyAPIView):
     serializer_class = CartItemSerializer
@@ -75,28 +79,39 @@ class OrderProductView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         with transaction.atomic():
             order_data = request.data
-            product_variant_id = order_data['product_variant']
-            quantity = order_data['quantity']
+            logger.info(f"Order data received: {order_data}")
+
+            # Validate the presence of 'product_id' and 'quantity'
+            product_id = order_data.get('product_id')
+            quantity = order_data.get('quantity')
+
+            if not product_id:
+                return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not quantity:
+                return Response({"error": "Quantity is required"}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
-                product_variant = ProductVariant.objects.get(id=product_variant_id)
+                product = Product.objects.get(id=product_id)
 
-                if product_variant.stock < quantity:
+                if product.TotalStock < int(quantity):
                     return Response({"error": "Insufficient stock"}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Update stock
-                product_variant.stock -= quantity
-                product_variant.save()
+                product.TotalStock -= int(quantity)
+                product.save()
 
                 # Create the order
-                Order.objects.create(
-                    product_variant=product_variant,
+                order = Order.objects.create(
+                    user=request.user,
+                    product=product,
                     quantity=quantity
                 )
 
-                return Response({"status": "success", "data": f"Order placed for {quantity} units"}, status=status.HTTP_201_CREATED)
-
-            except ProductVariant.DoesNotExist:
-                return Response({"error": "ProductVariant not found"}, status=status.HTTP_404_NOT_FOUND)
+                serializer = self.get_serializer(order)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Product.DoesNotExist:
+                return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
+                logger.error(f"Error in OrderProductView: {e}")
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
