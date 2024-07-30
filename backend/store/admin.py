@@ -15,8 +15,8 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('ProductName', 'ProductCode', 'ProductID')
 
 class VariantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'product', 'stock')  # Ensure 'product' is correct
-    search_fields = ('name', 'product__ProductName')  # Correct field lookup
+    list_display = ('name', 'product', 'stock')  
+    search_fields = ('name', 'product__ProductName')  
 
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Variant, VariantAdmin)

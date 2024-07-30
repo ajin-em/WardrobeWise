@@ -81,7 +81,6 @@ class OrderProductView(generics.CreateAPIView):
             order_data = request.data
             logger.info(f"Order data received: {order_data}")
 
-            # Validate the presence of 'product_id' and 'quantity'
             product_id = order_data.get('product_id')
             quantity = order_data.get('quantity')
 

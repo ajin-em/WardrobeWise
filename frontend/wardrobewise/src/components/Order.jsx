@@ -17,14 +17,13 @@ const Order = () => {
         product_id: item.product.id,
         quantity: item.quantity,
       };
-      console.log('Sending order data:', orderData);  // Log request data
+      console.log('Sending order data:', orderData);  
       return axios.post('/order/', orderData);
     });
 
     Promise.all(orderPromises)
       .then(responses => {
         setOrderDetails(responses.map(response => response.data));
-        // Optionally clear the cart after placing orders
         axios.delete('/cart/')
           .catch(error => console.error('Error clearing cart:', error));
       })
