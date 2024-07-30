@@ -7,7 +7,7 @@ const Register = () => {
     username: '',
     email: '',
     password: '',
-    confirm_password: '' // Ensure this matches the backend expectation
+    confirm_password: '' 
   });
   const navigate = useNavigate();
 
