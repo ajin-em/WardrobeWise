@@ -1,16 +1,16 @@
 import axios from 'axios';
 
 const instance = axios.create({
-  baseURL: 'http://localhost:8000/api', // Update with your actual backend API URL
+  baseURL: 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add a request interceptor to include the token in the headers
+// Add a request interceptor to include the token in the headers, excluding the register endpoint
 instance.interceptors.request.use(config => {
   const token = localStorage.getItem('access');
-  if (token) {
+  if (token && config.url !== '/register/') {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

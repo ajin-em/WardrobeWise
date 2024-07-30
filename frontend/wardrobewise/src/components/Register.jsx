@@ -7,7 +7,7 @@ const Register = () => {
     username: '',
     email: '',
     password: '',
-    password2: ''
+    confirm_password: '' // Ensure this matches the backend expectation
   });
   const navigate = useNavigate();
 
@@ -25,7 +25,15 @@ const Register = () => {
         console.log('Registered successfully');
         navigate('/login');
       })
-      .catch(error => console.error(error));
+      .catch(error => {
+        if (error.response) {
+          console.error('Error:', error.response.data);
+        } else if (error.request) {
+          console.error('Error:', error.request);
+        } else {
+          console.error('Error:', error.message);
+        }
+      });
   };
 
   return (
@@ -58,8 +66,8 @@ const Register = () => {
         />
         <input 
           type="password" 
-          name="password2" 
-          value={formData.password2} 
+          name="confirm_password" 
+          value={formData.confirm_password} 
           onChange={handleChange} 
           placeholder="Confirm Password" 
           className="w-full mb-4 p-2 border rounded"
